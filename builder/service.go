@@ -126,7 +126,7 @@ func Register(stack *node.Node, backend *eth.Ethereum, cfg *BuilderConfig) error
 	if err != nil {
 		return fmt.Errorf("invalid genesisForkVersion: %w", err)
 	}
-
+	log.Info("Register", "GenesisForkVersion", cfg.GenesisForkVersion)
 	var genesisForkVersion [4]byte
 	copy(genesisForkVersion[:], genesisForkVersionBytes[:4])
 	builderSigningDomain := boostTypes.ComputeDomain(boostTypes.DomainTypeAppBuilder, genesisForkVersion, boostTypes.Root{})
@@ -136,7 +136,7 @@ func Register(stack *node.Node, backend *eth.Ethereum, cfg *BuilderConfig) error
 	if err != nil {
 		return fmt.Errorf("invalid bellatrixForkVersion: %w", err)
 	}
-
+	log.Info("Register", "BellatrixForkVersion", cfg.BellatrixForkVersion)
 	var bellatrixForkVersion [4]byte
 	copy(bellatrixForkVersion[:], bellatrixForkVersionBytes[:4])
 	proposerSigningDomain := boostTypes.ComputeDomain(boostTypes.DomainTypeBeaconProposer, bellatrixForkVersion, genesisValidatorsRoot)
@@ -156,13 +156,13 @@ func Register(stack *node.Node, backend *eth.Ethereum, cfg *BuilderConfig) error
 	} else {
 		return errors.New("neither local nor remote relay specified")
 	}
-
+	log.Info("Register", "RemoteRelayEndpoint", cfg.RemoteRelayEndpoint)
 	ethereumService := NewEthereumService(backend)
 
 	builderBackend := NewBuilder(builderSk, beaconClient, relay, builderSigningDomain, ethereumService)
 	builderService := NewService(cfg.ListenAddr, localRelay, builderBackend)
 	builderService.Start()
-
+	log.Info("register build apis")
 	stack.RegisterAPIs([]rpc.API{
 		{
 			Namespace:     "builder",
