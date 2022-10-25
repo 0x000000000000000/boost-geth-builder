@@ -246,6 +246,9 @@ func (ec *Client) GetBoundTransactionsAndPredictDoCall(ctx context.Context, bund
 	if err != nil {
 		return nil, err
 	}
+	if len(json) == 0 {
+		return nil, nil
+	}
 	return json, nil
 }
 
