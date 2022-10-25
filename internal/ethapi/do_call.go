@@ -144,7 +144,7 @@ func TransactionsDoCall(ctx context.Context, b Backend, args []TransactionArgs, 
 
 		newlogs := state.Logs()[logsPosition:len(state.Logs())]
 		if len(newlogs) == 0 {
-			logs = append(logs, []*types.Log{new(types.Log)})
+			logs = append(logs, []*types.Log{})
 		} else {
 			logs = append(logs, state.Logs()[logsPosition:len(state.Logs())])
 		}
