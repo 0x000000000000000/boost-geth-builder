@@ -21,7 +21,6 @@ package geth
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
@@ -87,9 +86,9 @@ func (ec *EthereumClient) GetTransactionByHashAndPredictDoCall(ctx *Context, has
 }
 
 // GetTransactionByHash returns the transaction with the given hash.
-func (ec *EthereumClient) GetBoundTransactionsAndPredictDoCall(ctx *Context, hash *Hash, input hexutil.Bytes) (tx []*ethapi.RPCTransactionPlus, _ error) {
+func (ec *EthereumClient) GetBoundTransactionsAndPredictDoCall(ctx *Context, bundle ethapi.BundleTransactions) (tx []*ethapi.RPCTransactionPlus, _ error) {
 	// TODO(karalabe): handle isPending
-	rawTx, err := ec.client.GetBoundTransactionsAndPredictDoCall(ctx.context, hash.hash, input)
+	rawTx, err := ec.client.GetBoundTransactionsAndPredictDoCall(ctx.context, bundle)
 	return rawTx, err
 }
 

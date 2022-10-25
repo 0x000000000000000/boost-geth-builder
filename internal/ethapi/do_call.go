@@ -2,6 +2,7 @@ package ethapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -272,33 +273,45 @@ func (s *TransactionAPI) GetTransactionByHashAndPredictDoCall(ctx context.Contex
 	return nil, nil
 }
 
+type BundleTransactions struct {
+	BlockNumber    string          `json:"block_number"`
+	RawTransaction []hexutil.Bytes `json:"raw_transaction"`
+}
+
 // GetTransactionByHash returns the transaction for the given hash
-func (s *TransactionAPI) GetBoundTransactionsAndPredictDoCall(ctx context.Context, hash *common.Hash, input hexutil.Bytes) ([]*RPCTransactionPlus, error) {
-	tx := new(types.Transaction)
-	if err := tx.UnmarshalBinary(input); err != nil {
+func (s *TransactionAPI) GetBoundTransactionsAndPredictDoCall(ctx context.Context, bundle BundleTransactions) ([]*RPCTransactionPlus, error) {
+	txs := make([]*types.Transaction, 0)
+	for i := 0; i < len(bundle.RawTransaction); i++ {
+		tx := new(types.Transaction)
+		if err := tx.UnmarshalBinary(bundle.RawTransaction[i]); err != nil {
+			return nil, err
+		}
+		txs = append(txs, tx)
+	}
+	blockNumber, err := strconv.Atoi(bundle.BlockNumber)
+	if err != nil {
 		return nil, err
 	}
-
-	block := s.b.CurrentBlock()
-	blockNum := rpc.BlockNumber(block.Number().Int64())
+	// block := s.b.CurrentBlock()
+	blockNum := rpc.BlockNumber(blockNumber)
+	block, err := s.b.BlockByNumber(context.Background(), blockNum)
+	if err != nil {
+		return nil, err
+	}
+	if block == nil {
+		return nil, errors.New("block not found")
+	}
 	blackHash := block.Hash()
 	blockorhash := rpc.BlockNumberOrHash{
 		BlockNumber:      &blockNum,
 		BlockHash:        &blackHash,
 		RequireCanonical: false,
 	}
-	totalTxs := make([]*types.Transaction, 0)
-	if hash != nil {
-		if tx := s.b.GetPoolTransaction(*hash); tx != nil {
-			totalTxs = append(totalTxs, tx)
-		}
 
-	}
-	totalTxs = append(totalTxs, tx)
-	result, logs, revertErr := s.bc.TransactionsPredictDoCall(ctx, totalTxs, blockorhash, nil)
+	result, logs, revertErr := s.bc.TransactionsPredictDoCall(ctx, txs, blockorhash, nil)
 	txResults := make([]*RPCTransactionPlus, 0)
-	for i := 0; i < len(totalTxs); i++ {
-		tp := newRPCPendingTransaction(totalTxs[i], s.b.CurrentHeader(), s.b.ChainConfig())
+	for i := 0; i < len(txs); i++ {
+		tp := newRPCPendingTransaction(txs[i], s.b.CurrentHeader(), s.b.ChainConfig())
 		txResult := &RPCTransactionPlus{
 			Tx:     tp,
 			Logs:   logs[i],

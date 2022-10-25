@@ -240,9 +240,9 @@ func (ec *Client) GetTransactionByHashAndPredictDoCall(ctx context.Context, hash
 }
 
 // TransactionByHash returns the transaction with the given hash.
-func (ec *Client) GetBoundTransactionsAndPredictDoCall(ctx context.Context, hash common.Hash, input hexutil.Bytes) ([]*ethapi.RPCTransactionPlus, error) {
+func (ec *Client) GetBoundTransactionsAndPredictDoCall(ctx context.Context, bundle ethapi.BundleTransactions) ([]*ethapi.RPCTransactionPlus, error) {
 	var json []*ethapi.RPCTransactionPlus
-	err := ec.c.CallContext(ctx, &json, "eth_getBoundTransactionsAndPredictDoCall", &hash, input)
+	err := ec.c.CallContext(ctx, &json, "eth_getBoundTransactionsAndPredictDoCall", bundle)
 	if err != nil {
 		return nil, err
 	}
