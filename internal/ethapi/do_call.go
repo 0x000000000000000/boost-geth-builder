@@ -181,13 +181,13 @@ func (b *BlockChainAPI) PredictDoCall(ctx context.Context, tx types.Transaction,
 	return result.Return(), logs, result.Err
 }
 
-func (b *BlockChainAPI) TransactionsPredictDoCall(ctx context.Context, txs []*types.Transaction, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride) ([]hexutil.Bytes, [][]*types.Log, []error) {
+func (b *BlockChainAPI) TransactionsPredictDoCall(ctx context.Context, txs []*types.Transaction, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride) ([]hexutil.Bytes, [][]*types.Log, []error, error) {
 	args := make([]TransactionArgs, 0)
 	for _, v := range txs {
 		chainId := b.b.ChainConfig().ChainID
 		msg, err := v.AsMessage(types.NewLondonSigner(chainId), nil)
 		if err != nil {
-			return nil, nil, []error{err}
+			return nil, nil, nil, err
 		}
 		from := msg.From()
 		gas := hexutil.Uint64(v.Gas())
@@ -213,19 +213,23 @@ func (b *BlockChainAPI) TransactionsPredictDoCall(ctx context.Context, txs []*ty
 	result, logs, err := TransactionsDoCall(ctx, b.b, args, blockNrOrHash, overrides, b.b.RPCEVMTimeout(), b.b.RPCGasCap())
 	if err != nil {
 		log.Error("TransactionsPredictDoCall err.....", err.Error())
-		return nil, nil, []error{err}
+		return nil, nil, nil, err
 	}
 	returns := make([]hexutil.Bytes, 0)
+	revert := make([]error, 0)
 	errs := make([]error, 0)
 	// If the result contains a revert reason, try to unpack and return it.
 	for i := 0; i < len(result); i++ {
 		if len(result[i].Revert()) > 0 {
-			return nil, nil, []error{newRevertError(result[i])}
+			revert = append(revert, newRevertError(result[i]))
+		} else {
+			revert = append(revert, nil)
 		}
+
 		returns = append(returns, result[i].Return())
 		errs = append(errs, result[i].Err)
 	}
-	return returns, logs, errs
+	return returns, logs, errs, nil
 }
 
 type RPCTransactionPlus struct {
@@ -322,7 +326,10 @@ func (s *TransactionAPI) GetBoundTransactionsAndPredictDoCall(ctx context.Contex
 		RequireCanonical: false,
 	}
 
-	result, logs, revertErr := s.bc.TransactionsPredictDoCall(ctx, txs, blockorhash, nil)
+	result, logs, revertErr, err := s.bc.TransactionsPredictDoCall(ctx, txs, blockorhash, nil)
+	if err != nil {
+		return nil, err
+	}
 	txResults := make([]*RPCTransactionPlus, 0)
 	for i := 0; i < len(txs); i++ {
 		tp := newRPCPendingTransaction(txs[i], s.b.CurrentHeader(), s.b.ChainConfig())
