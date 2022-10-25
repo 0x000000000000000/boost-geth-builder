@@ -131,7 +131,10 @@ func TransactionsDoCall(ctx context.Context, b Backend, args []TransactionArgs, 
 		if result != nil {
 			results = append(results, result)
 		} else {
-			results = append(results, new(core.ExecutionResult))
+			results = append(results, &core.ExecutionResult{
+				Err:        nil,
+				ReturnData: []byte{},
+			})
 		}
 
 		newlogs := state.Logs()[logsPosition:len(state.Logs())]
