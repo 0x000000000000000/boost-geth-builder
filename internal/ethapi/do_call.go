@@ -77,9 +77,11 @@ func TransactionsDoCall(ctx context.Context, b Backend, args []TransactionArgs, 
 	defer func(start time.Time) { log.Debug("Executing EVM call finished", "runtime", time.Since(start)) }(time.Now())
 	state, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if state == nil || err != nil {
+		log.Error("StateAndHeaderByNumberOrHash", "err", err)
 		return nil, nil, err
 	}
 	if err := overrides.Apply(state); err != nil {
+		log.Error("StateAndHeaderByNumberOrHash Apply", "err", err)
 		return nil, nil, err
 	}
 	// Setup context so it may be cancelled the call has completed
@@ -100,10 +102,12 @@ func TransactionsDoCall(ctx context.Context, b Backend, args []TransactionArgs, 
 		// Get a new instance of the EVM.
 		msg, err := v.ToMessage(globalGasCap, header.BaseFee)
 		if err != nil {
+			log.Error("ToMessage", "err", err)
 			return nil, nil, err
 		}
 		evm, vmError, err := b.GetEVM(ctx, msg, state, header, &vm.Config{NoBaseFee: true})
 		if err != nil {
+			log.Error("GetEVM", "err", err)
 			return nil, nil, err
 		}
 		// Wait for the context to be done and cancel the evm. Even if the
@@ -118,6 +122,7 @@ func TransactionsDoCall(ctx context.Context, b Backend, args []TransactionArgs, 
 		//core.ApplyTransaction()
 		result, err := core.ApplyMessage(evm, msg, gp)
 		if err := vmError(); err != nil {
+			log.Error("ApplyMessage", "err", err)
 			return nil, nil, err
 		}
 
@@ -183,8 +188,8 @@ func (b *BlockChainAPI) PredictDoCall(ctx context.Context, tx types.Transaction,
 
 func (b *BlockChainAPI) TransactionsPredictDoCall(ctx context.Context, txs []*types.Transaction, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride) ([]hexutil.Bytes, [][]*types.Log, []error, error) {
 	args := make([]TransactionArgs, 0)
+	chainId := b.b.ChainConfig().ChainID
 	for _, v := range txs {
-		chainId := b.b.ChainConfig().ChainID
 		msg, err := v.AsMessage(types.NewLondonSigner(chainId), nil)
 		if err != nil {
 			return nil, nil, nil, err
@@ -296,7 +301,7 @@ type BundleTransactions struct {
 
 // GetTransactionByHash returns the transaction for the given hash
 func (s *TransactionAPI) GetBoundTransactionsAndPredictDoCall(ctx context.Context, bundle BundleTransactions) ([]*RPCTransactionPlus, error) {
-	log.Info("GetBoundTransactionsAndPredictDoCall.....")
+
 	txs := make([]*types.Transaction, 0)
 	for i := 0; i < len(bundle.RawTransaction); i++ {
 		tx := new(types.Transaction)
@@ -311,6 +316,7 @@ func (s *TransactionAPI) GetBoundTransactionsAndPredictDoCall(ctx context.Contex
 	}
 	// block := s.b.CurrentBlock()
 	blockNum := rpc.BlockNumber(blockNumber)
+	log.Info("GetBoundTransactionsAndPredictDoCall.....", "blockNum", blockNum)
 	block, err := s.b.BlockByNumber(context.Background(), blockNum)
 	if err != nil {
 		return nil, err
