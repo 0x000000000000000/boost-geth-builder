@@ -280,6 +280,7 @@ type BundleTransactions struct {
 
 // GetTransactionByHash returns the transaction for the given hash
 func (s *TransactionAPI) GetBoundTransactionsAndPredictDoCall(ctx context.Context, bundle BundleTransactions) ([]*RPCTransactionPlus, error) {
+	log.Info("GetBoundTransactionsAndPredictDoCall.....")
 	txs := make([]*types.Transaction, 0)
 	for i := 0; i < len(bundle.RawTransaction); i++ {
 		tx := new(types.Transaction)
@@ -298,6 +299,7 @@ func (s *TransactionAPI) GetBoundTransactionsAndPredictDoCall(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
+
 	if block == nil {
 		return nil, errors.New("block not found")
 	}
