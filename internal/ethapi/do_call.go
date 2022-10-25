@@ -129,8 +129,12 @@ func TransactionsDoCall(ctx context.Context, b Backend, args []TransactionArgs, 
 			return []*core.ExecutionResult{result}, nil, fmt.Errorf("err: %w (supplied gas %d)", err, msg.Gas())
 		}
 		results = append(results, result)
-
-		logs = append(logs, state.Logs()[logsPosition:len(state.Logs())])
+		newlogs := state.Logs()[logsPosition:len(state.Logs())]
+		if len(newlogs) == 0 {
+			logs = append(logs, []*types.Log{new(types.Log)})
+		} else {
+			logs = append(logs, state.Logs()[logsPosition:len(state.Logs())])
+		}
 		logsPosition = len(state.Logs())
 	}
 	return results, logs, nil
