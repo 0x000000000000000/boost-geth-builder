@@ -2,7 +2,6 @@ package ethapi
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -317,18 +316,18 @@ func (s *TransactionAPI) GetBoundTransactionsAndPredictDoCall(ctx context.Contex
 	// block := s.b.CurrentBlock()
 	blockNum := rpc.BlockNumber(blockNumber)
 	log.Info("GetBoundTransactionsAndPredictDoCall.....", "blockNum", blockNum)
-	block, err := s.b.BlockByNumber(context.Background(), blockNum)
-	if err != nil {
-		return nil, err
-	}
+	// block, err := s.b.BlockByNumber(context.Background(), blockNum)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	if block == nil {
-		return nil, errors.New("block not found")
-	}
-	blackHash := block.Hash()
+	// if block == nil {
+	// 	return nil, errors.New("block not found")
+	// }
+	//blackHash := block.Hash()
 	blockorhash := rpc.BlockNumberOrHash{
-		BlockNumber:      &blockNum,
-		BlockHash:        &blackHash,
+		BlockNumber: &blockNum,
+		//	BlockHash:        &blackHash,
 		RequireCanonical: false,
 	}
 
