@@ -1,6 +1,7 @@
 package ethapi
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -301,14 +303,17 @@ type BundleTransactions struct {
 
 // GetTransactionByHash returns the transaction for the given hash
 func (s *TransactionAPI) GetBoundTransactionsAndPredictDoCall(ctx context.Context, bundle BundleTransactions) ([]*RPCTransactionPlus, error) {
-
+	buffer := new(bytes.Buffer)
 	txs := make([]*types.Transaction, 0)
 	for i := 0; i < len(bundle.RawTransaction); i++ {
 		tx := new(types.Transaction)
-		if err := tx.UnmarshalBinary(bundle.RawTransaction[i]); err != nil {
+		buffer.Write(bundle.RawTransaction[i])
+		err := tx.DecodeRLP(rlp.NewStream(buffer, uint64(buffer.Len())))
+		if err != nil {
 			return nil, err
 		}
 		txs = append(txs, tx)
+		buffer.Reset()
 	}
 	blockNumber, err := strconv.Atoi(bundle.BlockNumber)
 	if err != nil {
@@ -326,7 +331,6 @@ func (s *TransactionAPI) GetBoundTransactionsAndPredictDoCall(ctx context.Contex
 		return nil, errors.New("block not found")
 	}
 	blackHash := block.Hash()
-	log.Info("block hash", "hash", blackHash.String())
 	blockorhash := rpc.BlockNumberOrHash{
 		BlockNumber:      &blockNum,
 		BlockHash:        &blackHash,
